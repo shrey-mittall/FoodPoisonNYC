@@ -1,0 +1,112 @@
+//stores the relative path to the csv file
+val filename = "./cleaned_csv_headers.csv"
+
+//then we create a source object based off of this filepath
+val source = Source.fromFile(filename)
+
+//we are going to go through the lines in the file, and split on comma
+val lines = source.getLines().map(_.split(",").map(_.trim))
+
+//converting file to list of arrays of fields
+var data = lines.toList
+
+//tidy up! make sure to close the file
+source.close()
+
+// Remove the first character and the last three characters from the last element of each array
+data = data.zipWithIndex.map {
+  case (array, 0) => array // If the index is 0 (i.e., the first array), return the original array
+  case (array, _) => {
+    val lastElement = array.last
+    val newLastElement = lastElement.substring(1, lastElement.length - 3)
+    array.init :+ newLastElement
+  }
+}
+
+//printing out the first 5 lines in data
+data.slice(0, 5).foreach(array => println(array.mkString("; ")))
+
+// Create a SparkSession
+//  val spark = SparkSession.builder().appName("MyApp").master("local[*]").getOrCreate()
+
+// Set the log level to WARN
+spark.sparkContext.setLogLevel("ERROR")
+
+import spark.implicits._
+
+// Convert the list of arrays to a DataFrame
+val df = data.toDF()
+
+// Add column names to the DataFrame
+val headerNames = Seq("Date", "Zip", "Borough", "Latitude", "Longitude")
+
+//this is splitting the one column DF into the 5
+val splitDF = df.selectExpr("transform(value, x -> split(x, ',')) as split_cols")
+
+//assigning the names for the new df columns
+var finalDF = splitDF.select(
+  $"split_cols".getItem(0).alias("Date"),
+  $"split_cols".getItem(1).alias("Zip"),
+  $"split_cols".getItem(2).alias("Borough"),
+  $"split_cols".getItem(3).alias("Latitude"),
+  $"split_cols".getItem(4).alias("Longitude")
+)
+
+//removing the first row cause its just headers right now
+var row_to_delete = finalDF.first()
+finalDF = finalDF.filter(row => row != row_to_delete)
+
+//setting the latitude to decimal format
+val dfWithDecimalLat = finalDF.withColumn("Latitude", $"Latitude".cast("array<decimal(10,6)>")).selectExpr("Latitude[0] as Latitude", "Date", "Zip", "Borough", "Longitude")
+
+// setting the longitude to decimal format
+var newDf = dfWithDecimalLat.withColumn("Longitude", $"Longitude".cast("array<decimal(10,6)>")).selectExpr("Latitude", "Date", "Zip", "Borough", "Longitude[0] as Longitude")
+
+//reordering the dataframe
+newDf = newDf.select("Date", "Zip", "Borough", "Latitude", "Longitude")
+
+//casting the zip to an int
+newDf = newDf.withColumn("Zip", col("Zip")(0).cast("int"))
+
+// Show the DataFrame
+newDf.show(numRows = 20, truncate = false)
+
+//showing the dataframe schema to make sure datatype conversion worked
+newDf.printSchema()
+
+println(s"Number of columns in the DataFrame: ${newDf.columns.length}")
+
+//counting distinct zip codes
+val distinctZipCount = newDf.select("Zip").distinct().count()
+println(s"Number of distinct values in Zip column: $distinctZipCount")
+
+//printing distinct boroughs
+newDf.select("Borough").distinct().show()
+
+//calculating average lat and long
+val avgLongitude = newDf.agg(avg($"Longitude").cast("double")).collect()(0)(0)
+val avgLatitude = newDf.agg(avg($"Latitude").cast("double")).collect()(0)(0)
+
+//printing average lat and long
+println(s"Average Longitude: $avgLongitude")
+println(s"Average Latitude: $avgLatitude")
+
+//finding out the most common zip code int value
+val mostCommonZip = newDf.groupBy("Zip")
+  .count()
+  .sort(desc("count"))
+  .select(col("Zip"))
+  .first()
+  .getInt(0)
+
+//printing the most common zip code value
+println(s"The most common Zip is: $mostCommonZip")
+
+//Calculating how many distinct zip codes there are
+val distinctZipDF = newDf.groupBy(col("Zip")).agg(count("*").as("RowCount"))
+
+//displaying the first 200 rows of that distinct zip code dataframe
+distinctZipDF.show(200)
+
+//displaying the original dataframe for comparison
+newDf.show()

@@ -1,0 +1,5 @@
+Accuracy of the logistic regression model, predicting zip grade based on row_count
+ and average score = 0.9701492537313433
+Pearson Coefficient between food poisoning cases count and critical violation percentage per zipcode: 0.02284844749224409
+Pearson Coefficient between food poisoning cases count and average restaurant inspection score per zipcode: 0.2715087823170621
+Pearson Coefficient between food poisoning cases count and average grade per zipcode: 0.34389225534199447

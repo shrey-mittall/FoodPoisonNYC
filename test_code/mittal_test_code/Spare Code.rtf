@@ -1,0 +1,72 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2708
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fmodern\fcharset0 Courier;}
+{\colortbl;\red255\green255\blue255;\red108\green121\blue135;\red31\green31\blue36;}
+{\*\expandedcolortbl;;\csgenericrgb\c42353\c47451\c52941;\csgenericrgb\c12157\c12157\c14118;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 LINE 148\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f1\fs26 \cf2 \cb3 //  inspectionsDF.show()\
+\
+/*\
+\
+var outputDF = inspectionsDF\
+  .groupBy("_c1")\
+  .agg(\
+    round(avg("_c4"), 2).alias("average_score"),\
+    round(sum(when(col("_c3") === "Critical", 1).otherwise(0)) / count("*") * 100, 2).alias("critical_percentage")\
+  )\
+  .orderBy("_c1")\
+\
+outputDF = outputDF.withColumnRenamed("_c1", "Zip")\
+\
+outputDF.show()\
+*/\
+\
+/*\
+inspectionsDF = inspectionsDF.withColumnRenamed("_c1", "zipcode")\
+inspectionsDF = inspectionsDF.withColumnRenamed("_c4", "score")\
+inspectionsDF = inspectionsDF.withColumnRenamed("_c3", "critical")\
+\
+val statsDF = inspectionsDF.groupBy("zipcode").agg(\
+  round(avg("score"), 2).alias("average_score"),\
+  round(sum(when(col("critical") === "Critical", 1).otherwise(0)) / count("*") * 100, 2).alias("critical_percentage")\
+)\
+\
+// Compute grade based on average score per zipcode\
+val gradesDF = statsDF.withColumn("zip_grade", when(col("average_score") < 14, "A").when(col("average_score") < 28, "B").otherwise("C"))\
+\
+// Join the two dataframes to get the final result\
+val resultDF = gradesDF.select("zipcode", "average_score", "zip_grade", "critical_percentage").orderBy("zipcode")\
+\
+// Select the desired columns and order by zipcode\
+var outputDF = resultDF.select("zipcode", "average_score", "zip_grade", "critical_percentage").orderBy("zipcode")\
+\
+outputDF.show()\
+*/\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+LINE 167\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 //outputDF.show()\
+\
+//Visualizing zipcode scores and grades for zipcode 100000\
+//val result = inspectionsDF.filter(col("_c1") === 10000)\
+//  result.show()\
+//Visualizing zipcode scores and grades for zipcode 10001\
+//val b = inspectionsDF.filter(col("_c1") === 10001)\
+//  b.show()\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf2 \
+}
